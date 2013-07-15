@@ -1,7 +1,7 @@
 from PageParser import PageParser
-from datetime import date
+from datetime import datetime
 import re
-from BeautifulSoup import BeautifulSoup
+from bs4 import BeautifulSoup
 
 class IndieParser(PageParser):
 
@@ -9,50 +9,57 @@ class IndieParser(PageParser):
 
     def parse(self, pageText):
 
-        pageData = dict()
+        pageData = []
+        event_blocks = []
 
         soup = BeautifulSoup(pageText)
+        # eventData['title'] = soup.html.head.title.string
 
-        event = soup.find("div", "list-view-details vevent")
+        event_blocks = soup.find_all("div", "list-view-details vevent")
 
-        if event != None:
-            headline_summary = event.find("h1", "headliners summary").a.string
-            pageData['headline_comment'] = headline_summary
+        for event in event_blocks:
 
-            headliners = event.find("h1", "headliners").a
-            #if headliners == None:
-                # error no openers in log
-            pageData['headliners'] = headliners.string
-            pageData['headliners_link'] = self.formURL(headliners['href'], self.m_siteDomain)
+            if event != None:
+                eventData = dict()
 
-            pageData['event_info'] = event.find("h2", "topline-info").string
+                headline_summary = event.find("h1", "headliners summary").a
+                #if headliners == None:
+                    # error no openers in log
+                eventData['headliners'] =headline_summary.string
+                eventData['headliners_link'] = self.formURL(headline_summary['href'], self.m_siteDomain)
 
-            openers = event.find("h2", "supports description").a.string
-            #if also_billed == None:
-                # report no openers in log
-            pageData['openers'] = openers
+                headliners = event.find("h1", "headliners").a
+                if headliners != None:
+                    eventData['headliners'] += " " +  headliners.string
 
-            event_datetime = self.cleanupDatetime(event.find("span", "value-title").string)
-            #if show_date == None:
-                # throw no date exception
-            pageData['event_date'] = event_datetime.date
-            pageData['event_time'] = event_datetime.time
+                event_info = event.find("h2", "topline-info")
+                if event_info != None:
+                    eventData['event_info'] = ''
+                    for info in event_info.strings:
+                        eventData['event_info'] += info + ' '
+                        print eventData['event_info']
 
-# .find("h2", "topline-info").string
+                openers = event.find("h2", "supports description")
+                if openers != None:
+                    eventData['openers'] = openers.a.string
+                    eventData['openers_link'] = self.formURL(openers.a['href'], self.m_siteDomain)
+                # else
+                    # report no openers in log
 
-        #print top_info
+                indieDate = event.find("span", "value-title")['title']
+                #if show_date == None:
+                    # throw no date exception
+                eventData['event_datetime'] = self.cleanupDatetime(indieDate)
 
-        pageData['title'] = soup.html.head.title.string
-        #pageData['event_comment'] = top_info
+                pageData.append(eventData)
 
         return pageData
 
-    def cleanupDate(self, indieDate):
+    def cleanupDatetime(self, indieDate):
 
-        string.parse
-        reDate = re.search('([0-9]+)\.([0-9]+)', indieDate)
+        reDate = re.search('([0-9]+)-([0-9]+)-([0-9]+)T([0-9]+):([0-9])', indieDate)
         if reDate == None:
             return None
 
-        event_date = date(int(currentYear), int(reDate.group(1)), int(reDate.group(2)))
+        event_date = datetime(int(reDate.group(1)), int(reDate.group(2)), int(reDate.group(3)), int(reDate.group(4)), int(reDate.group(5)))
         return event_date

@@ -15,6 +15,4 @@ indie = IndieParser()
 
 pageData = indie.parse(page)
 
-print pageData
-
 showDB.feed(pageData)
