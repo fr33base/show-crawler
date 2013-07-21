@@ -6,7 +6,7 @@ from ShowDB import ShowDB
 
 showDB = ShowDB("database")
 
- # pageFile = urlopen("http://www.theindependentsf.com/")
+# pageFile = urlopen("http://www.theindependentsf.com/")
 pageFile = open('test_pages/indie.html', 'r')
 
 page = pageFile.read()

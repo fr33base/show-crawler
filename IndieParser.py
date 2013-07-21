@@ -2,6 +2,7 @@ from PageParser import PageParser
 from datetime import datetime
 import re
 from bs4 import BeautifulSoup
+from ShowDB import VenueEvent
 
 class IndieParser(PageParser):
 
@@ -9,55 +10,61 @@ class IndieParser(PageParser):
 
     def parse(self, pageText):
 
-        pageData = []
         event_blocks = []
 
         soup = BeautifulSoup(pageText)
-        # eventData['title'] = soup.html.head.title.string
+        if soup == None:
+            # throw something
+            return None
 
         event_blocks = soup.find_all("div", "list-view-details vevent")
 
         for event in event_blocks:
 
             if event != None:
-                eventData = dict()
+                ed = dict()
 
                 headline_summary = event.find("h1", "headliners summary").a
                 #if headliners == None:
                     # error no openers in log
-                eventData['headliners'] =headline_summary.string
-                eventData['headliners_link'] = self.formURL(headline_summary['href'], self.m_siteDomain)
+                ed['headliners'] =headline_summary.string
+                ed['headliners_link'] = self.formURL(headline_summary['href'], self.m_siteDomain)
 
                 headliners = event.find("h1", "headliners").a
                 if headliners != None:
-                    eventData['headliners'] += " " +  headliners.string
+                    ed['headliners'] += " " +  headliners.string
 
-                event_info = event.find("h2", "topline-info")
-                if event_info != None:
-                    eventData['event_info'] = ''
-                    for info in event_info.strings:
-                        eventData['event_info'] += info + ' '
-                        print eventData['event_info']
+                eInfo = event.find("h2", "topline-info")
+                if eInfo != None:
+                    ed['event_info'] = ''
+                    for info in eInfo.strings:
+                        ed['event_info'] += info + ' '
+                else:
+                    ed['event_info'] = ''
 
                 openers = event.find("h2", "supports description")
                 if openers != None:
-                    eventData['openers'] = openers.a.string
-                    eventData['openers_link'] = self.formURL(openers.a['href'], self.m_siteDomain)
-                # else
+                    ed['openers'] = openers.a.string
+                    ed['openers_link'] = self.formURL(openers.a['href'], self.m_siteDomain)
+                else:
                     # report no openers in log
+                    ed['openers'] = ''
+                    ed['openers_link'] = ''
 
                 indieDate = event.find("span", "value-title")['title']
                 #if show_date == None:
                     # throw no date exception
-                eventData['event_datetime'] = self.cleanupDatetime(indieDate)
+                ed['event_datetime'] = self.cleanupDatetime(indieDate)
 
-                pageData.append(eventData)
+                # add data to database session
+                myEV = VenueEvent(headliner = ed['headliners'], event_info = ed['event_info'], headliner_link = ed['headliners_link'], openers = ed['openers'], openers_link = ed['openers_link'], event_datetime = ed['event_datetime'])
+                self.events.append(myEV)
 
-        return pageData
+        return self.events
 
     def cleanupDatetime(self, indieDate):
 
-        reDate = re.search('([0-9]+)-([0-9]+)-([0-9]+)T([0-9]+):([0-9])', indieDate)
+        reDate = re.search('([0-9]+)-([0-9]+)-([0-9]+)T([0-9]+):([0-9]+):[0-9]+-([0-9]+):[0-9]+', indieDate)
         if reDate == None:
             return None
 

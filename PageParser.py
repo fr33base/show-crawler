@@ -3,7 +3,7 @@ import string
 class PageParser:
 
     def __init__(self):
-        self.pageData = []
+        self.events = []
 
     def formURL(self, link, domain):
         # TODO: this is insanely flimsy
