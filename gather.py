@@ -4,7 +4,7 @@ from lxml import html
 from IndieParser import IndieParser
 from ShowDB import ShowDB
 
-showDB = ShowDB("database")
+showDB = ShowDB("test")
 
 # pageFile = urlopen("http://www.theindependentsf.com/")
 pageFile = open('test_pages/indie.html', 'r')
@@ -13,6 +13,6 @@ page = pageFile.read()
 
 indie = IndieParser()
 
-pageData = indie.parse(page)
+eventList = indie.parse(page)
 
-showDB.feed(pageData)
+showDB.feed(eventList)

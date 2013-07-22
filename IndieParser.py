@@ -8,6 +8,9 @@ class IndieParser(PageParser):
 
     m_siteDomain = 'http://www.theindependentsf.com'
 
+    def getVenue(self):
+        return Venue(name = 'The Independent', link = m_siteDomain)
+
     def parse(self, pageText):
 
         event_blocks = []
@@ -17,7 +20,7 @@ class IndieParser(PageParser):
             # throw something
             return None
 
-        event_blocks = soup.find_all("div", "list-view-details vevent")
+        event_blocks = soup.find_all("div", re.compile("list-view-item"))
 
         for event in event_blocks:
 
@@ -25,26 +28,25 @@ class IndieParser(PageParser):
                 ed = dict()
 
                 headline_summary = event.find("h1", "headliners summary").a
-                #if headliners == None:
+                if headline_summary != None:
                     # error no openers in log
-                ed['headliners'] =headline_summary.string
-                ed['headliners_link'] = self.formURL(headline_summary['href'], self.m_siteDomain)
+                    ed['headliners'] = headline_summary.string.encode('utf-8')
+                    ed['headliners_link'] = self.formURL(headline_summary['href'], self.m_siteDomain)
 
-                headliners = event.find("h1", "headliners").a
-                if headliners != None:
-                    ed['headliners'] += " " +  headliners.string
 
                 eInfo = event.find("h2", "topline-info")
                 if eInfo != None:
-                    ed['event_info'] = ''
-                    for info in eInfo.strings:
-                        ed['event_info'] += info + ' '
+                    ed['event_info'] = u' '.join(eInfo.strings).encode('utf-8')
                 else:
-                    ed['event_info'] = ''
+                    ed['event_info'] = u''
+
+                headliners = event.find("h1", "headliners").a
+                if headliners != None:
+                    ed['openers'] = headliners.string.encode('utf-8')
 
                 openers = event.find("h2", "supports description")
                 if openers != None:
-                    ed['openers'] = openers.a.string
+                    ed['openers'] = u' '.join([openers.a.string, ed['openers']]).encode('utf-8')
                     ed['openers_link'] = self.formURL(openers.a['href'], self.m_siteDomain)
                 else:
                     # report no openers in log
@@ -54,15 +56,21 @@ class IndieParser(PageParser):
                 indieDate = event.find("span", "value-title")['title']
                 #if show_date == None:
                     # throw no date exception
-                ed['event_datetime'] = self.cleanupDatetime(indieDate)
+                ed['event_datetime'] = self.makeDatetime(indieDate)
+
+                price = event.find("h3", "price-range")
+                if price != None:
+                    ed['price'] = price.string.strip().encode('utf-8')
+                else:
+                    ed['price'] = 'See website for details'
 
                 # add data to database session
-                myEV = VenueEvent(headliner = ed['headliners'], event_info = ed['event_info'], headliner_link = ed['headliners_link'], openers = ed['openers'], openers_link = ed['openers_link'], event_datetime = ed['event_datetime'])
+                myEV = VenueEvent(headliner = ed['headliners'], event_info = ed['event_info'], headliner_link = ed['headliners_link'], openers = ed['openers'], openers_link = ed['openers_link'], event_datetime = ed['event_datetime'], event_price = ed['price'])
                 self.events.append(myEV)
 
         return self.events
 
-    def cleanupDatetime(self, indieDate):
+    def makeDatetime(self, indieDate):
 
         reDate = re.search('([0-9]+)-([0-9]+)-([0-9]+)T([0-9]+):([0-9]+):[0-9]+-([0-9]+):[0-9]+', indieDate)
         if reDate == None:
