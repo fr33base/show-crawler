@@ -10,7 +10,7 @@ class ShowDB:
 
     def __init__(self, dbInfo):
 
-        if dbInfo == 'testd':
+        if dbInfo == 'test':
             self.engine = create_engine('sqlite:///:memory:', echo=False)
         else:
             self.engine = create_engine('mysql+mysqldb://will:showcrawling@localhost/showcrawler?charset=utf8', echo=True, pool_recycle=3600)
