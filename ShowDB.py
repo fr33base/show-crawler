@@ -1,7 +1,8 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Sequence, Integer, Column, String, DateTime, ForeignKey, Numeric
-from sqlalchemy.orm import relationship, backref, sessionmaker
+from sqlalchemy import Sequence, Integer, Column, Boolean, Unicode, DateTime, ForeignKey
+from sqlalchemy.orm import relationship, backref
+from datetime import datetime
 
 Base = declarative_base()
 
@@ -31,10 +32,10 @@ class Venue(Base):
 
     __tablename__ = 'venue'
     id = Column(Integer, Sequence('venue_id_seq'), primary_key=True)
-    name = Column(String(128))
-    link = Column(String(256))
-    phone_num = Column(String(16))
-    address = Column(String(256))
+    name = Column(Unicode)
+    link = Column(Unicode)
+    phone_num = Column(Unicode)
+    address = Column(Unicode)
     events = relationship("VenueEvent", backref=backref('venue', order_by=id))
 
     def __init__(self):
@@ -44,13 +45,20 @@ class VenueEvent(Base):
 
     __tablename__ = 'venueEvent'
     id = Column(Integer, Sequence('event_id_seq'), primary_key=True)
-    event_comment = Column(String(512))
-    headliner = Column(String(128))
-    headliner_link = Column(String(256))
-    event_info = Column(String(512))
-    openers = Column(String(256))
-    openers_link = Column(String(256))
+    event_comment = Column(Unicode)
+    comment_dirty = Column(Boolean, default=False)
+    headliner = Column(Unicode)
+    headliner_dirty = Column(Boolean, default=False)
+    headliner_link = Column(Unicode)
+    event_info = Column(Unicode)
+    info_dirty = Column(Boolean, default=False)
+    openers = Column(Unicode)
+    openers_dirty = Column(Boolean, default=False)
+    openers_link = Column(Unicode)
     event_datetime = Column(DateTime)
-    event_price = Column(String(128))
+    event_time_dirty = Column(Boolean, default=False)
+    last_updated = Column(DateTime, onupdate=datetime.now)
+    created_date = Column(DateTime, default=datetime.now)
+    event_deleted = Column(Boolean, default=False)
 
     venue_id = Column(Integer, ForeignKey('venue.id'))
